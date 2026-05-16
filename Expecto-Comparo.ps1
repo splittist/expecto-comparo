@@ -6,12 +6,14 @@ Add-Type -AssemblyName System.Drawing
 
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
-$script:MaxSuggestedOutputNameLength = 180 # conservative default to reduce path-length issues in older/locked-down Windows environments
+$script:MaxSuggestedOutputNameLength = 180 # conservative name cap to keep full output path under common Windows MAX_PATH deployments
 $script:FuzzyMatchThreshold = 0.70
 $script:HigherConfidenceFuzzyThreshold = 0.85
 $script:WdCompareDestinationNew = 2 # Word constant: wdCompareDestinationNew
 $script:WdGranularityWordLevel = 1 # Word constant: wdGranularityWordLevel
 $script:WdFormatXMLDocument = 12 # Word constant: wdFormatXMLDocument (.docx)
+$script:WdAlertsNone = 0 # Word constant: wdAlertsNone
+$script:WdDoNotSaveChanges = 0 # Word constant: wdDoNotSaveChanges
 
 $script:State = [ordered]@{
     PreviousFolder = ''
@@ -66,7 +68,8 @@ function Get-LevenshteinDistance {
 
     for ($i = 1; $i -lt $height; $i++) {
         for ($j = 1; $j -lt $width; $j++) {
-            $cost = if ($A.Chars($i - 1) -ieq $B.Chars($j - 1)) { 0 } else { 1 }
+            # Strings are pre-normalized to lowercase before distance scoring.
+            $cost = if ($A.Chars($i - 1) -ceq $B.Chars($j - 1)) { 0 } else { 1 }
             $deletion = $d[$i - 1, $j] + 1
             $insertion = $d[$i, $j - 1] + 1
             $substitution = $d[$i - 1, $j - 1] + $cost
@@ -364,13 +367,14 @@ function Start-ComparisonRun {
             Write-RunLog -Level 'info' -Message 'Using existing Microsoft Word instance.' -ToUi
         }
         catch {
+            Write-RunLog -Level 'info' -Message "Could not attach to existing Word instance: $($_.Exception.Message). Starting a new instance." -ToUi
             $word = New-Object -ComObject Word.Application
             $createdWord = $true
             Write-RunLog -Level 'info' -Message 'Started new Microsoft Word instance.' -ToUi
         }
 
         $word.Visible = [bool]$chkShowWord.Checked
-        $word.DisplayAlerts = 0
+        $word.DisplayAlerts = $script:WdAlertsNone
 
         foreach ($pair in $selectedPairs) {
             $progressBar.Value++
@@ -438,9 +442,9 @@ function Start-ComparisonRun {
                 Write-RunLog -Level 'error' -Message "Failed comparison for '$($pair.CurrentName)' and '$($pair.PreviousName)': $($_.Exception.Message)" -ToUi
             }
             finally {
-                if ($comparisonDoc) { $comparisonDoc.Close([ref]0) }
-                if ($currentDoc) { $currentDoc.Close([ref]0) }
-                if ($previousDoc) { $previousDoc.Close([ref]0) }
+                if ($comparisonDoc) { $comparisonDoc.Close([ref]$script:WdDoNotSaveChanges) }
+                if ($currentDoc) { $currentDoc.Close([ref]$script:WdDoNotSaveChanges) }
+                if ($previousDoc) { $previousDoc.Close([ref]$script:WdDoNotSaveChanges) }
             }
         }
     }
