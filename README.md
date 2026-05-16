@@ -36,6 +36,14 @@ From Windows PowerShell:
 powershell -ExecutionPolicy RemoteSigned -File .\Expecto-Comparo.ps1
 ```
 
+### Test
+
+The regression tests use `docxfix` to generate temporary `.docx` fixtures. By default they expect `docxfix` at `C:\Users\David\Code\docxfix`; set `DOCXFIX_ROOT` to override that location.
+
+```powershell
+pwsh -NoProfile -File .\tests\Run-ExpectoComparoTests.ps1
+```
+
 ### Notes
 
 - Comparisons run one at a time (sequentially).

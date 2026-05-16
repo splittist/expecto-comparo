@@ -61,7 +61,7 @@ function Get-LevenshteinDistance {
 
     $width = $B.Length + 1
     $height = $A.Length + 1
-    $d = New-Object 'int[,]' $height, $width
+    $d = [int[,]]::new($height, $width)
 
     for ($i = 0; $i -lt $height; $i++) { $d[$i, 0] = $i }
     for ($j = 0; $j -lt $width; $j++) { $d[0, $j] = $j }
@@ -70,14 +70,14 @@ function Get-LevenshteinDistance {
         for ($j = 1; $j -lt $width; $j++) {
             # Strings are pre-normalized to lowercase before distance scoring.
             $cost = if ($A.Chars($i - 1) -ceq $B.Chars($j - 1)) { 0 } else { 1 }
-            $deletion = $d[$i - 1, $j] + 1
-            $insertion = $d[$i, $j - 1] + 1
-            $substitution = $d[$i - 1, $j - 1] + $cost
+            $deletion = $d[($i - 1), $j] + 1
+            $insertion = $d[$i, ($j - 1)] + 1
+            $substitution = $d[($i - 1), ($j - 1)] + $cost
             $d[$i, $j] = [Math]::Min([Math]::Min($deletion, $insertion), $substitution)
         }
     }
 
-    return $d[$height - 1, $width - 1]
+    return $d[($height - 1), ($width - 1)]
 }
 
 function Get-SimilarityScore {
@@ -150,6 +150,26 @@ function Write-RunLog {
         $txtStatus.SelectionStart = $txtStatus.Text.Length
         $txtStatus.ScrollToCaret()
         [System.Windows.Forms.Application]::DoEvents()
+    }
+}
+
+function Invoke-UiAction {
+    param(
+        [Parameter(Mandatory)][scriptblock]$Action,
+        [Parameter(Mandatory)][string]$ActionName
+    )
+
+    try {
+        & $Action
+    }
+    catch {
+        $message = $_.Exception.Message
+        [System.Windows.Forms.MessageBox]::Show(
+            "$ActionName failed:`n`n$message",
+            'Expecto Comparo',
+            'OK',
+            'Error'
+        ) | Out-Null
     }
 }
 
@@ -306,8 +326,8 @@ function Scan-Folders {
         return
     }
 
-    $script:State.PreviousFiles = Get-DocxFiles -Folder $script:State.PreviousFolder
-    $script:State.CurrentFiles = Get-DocxFiles -Folder $script:State.CurrentFolder
+    $script:State.PreviousFiles = @(Get-DocxFiles -Folder $script:State.PreviousFolder)
+    $script:State.CurrentFiles = @(Get-DocxFiles -Folder $script:State.CurrentFolder)
 
     Suggest-Pairs
     $lblCounts.Text = "Previous: $($script:State.PreviousFiles.Count)   Current: $($script:State.CurrentFiles.Count)   Suggested pairs: $($script:State.SuggestedPairs.Count)"
@@ -561,12 +581,12 @@ $lstCurrentUnmatched.Width = 500
 $lstCurrentUnmatched.Height = 130
 
 $btnPair = New-Object System.Windows.Forms.Button
-$btnPair.Text = 'Pair Selected →'
+$btnPair.Text = 'Pair Selected ->'
 $btnPair.Width = 160
 $btnPair.Location = New-Object System.Drawing.Point(530, 560)
 
 $btnUnpair = New-Object System.Windows.Forms.Button
-$btnUnpair.Text = '← Unpair Row'
+$btnUnpair.Text = '<- Unpair Row'
 $btnUnpair.Width = 160
 $btnUnpair.Location = New-Object System.Drawing.Point(530, 600)
 
@@ -603,74 +623,90 @@ $form.Controls.AddRange(@(
 ))
 
 $btnPrevious.Add_Click({
-    $selected = Open-FolderPicker -InitialPath $script:State.PreviousFolder
-    if ($selected) {
-        $script:State.PreviousFolder = $selected
-        $txtPrevious.Text = $selected
+    Invoke-UiAction -ActionName 'Select Previous Folder' -Action {
+        $selected = Open-FolderPicker -InitialPath $script:State.PreviousFolder
+        if ($selected) {
+            $script:State.PreviousFolder = $selected
+            $txtPrevious.Text = $selected
+        }
     }
 })
 
 $btnCurrent.Add_Click({
-    $selected = Open-FolderPicker -InitialPath $script:State.CurrentFolder
-    if ($selected) {
-        $script:State.CurrentFolder = $selected
-        $txtCurrent.Text = $selected
+    Invoke-UiAction -ActionName 'Select Current Folder' -Action {
+        $selected = Open-FolderPicker -InitialPath $script:State.CurrentFolder
+        if ($selected) {
+            $script:State.CurrentFolder = $selected
+            $txtCurrent.Text = $selected
+        }
     }
 })
 
 $btnOutput.Add_Click({
-    $selected = Open-FolderPicker -InitialPath $script:State.OutputFolder
-    if ($selected) {
-        $script:State.OutputFolder = $selected
-        $txtOutput.Text = $selected
+    Invoke-UiAction -ActionName 'Select Output Folder' -Action {
+        $selected = Open-FolderPicker -InitialPath $script:State.OutputFolder
+        if ($selected) {
+            $script:State.OutputFolder = $selected
+            $txtOutput.Text = $selected
+        }
     }
 })
 
 $btnScan.Add_Click({
-    Scan-Folders
+    Invoke-UiAction -ActionName 'Refresh / Rescan' -Action {
+        Scan-Folders
+    }
 })
 
 $btnPair.Add_Click({
-    if (-not $lstPreviousUnmatched.SelectedItem -or -not $lstCurrentUnmatched.SelectedItem) {
-        [System.Windows.Forms.MessageBox]::Show('Select one unmatched previous file and one unmatched current file.', 'Expecto Comparo', 'OK', 'Information') | Out-Null
-        return
+    Invoke-UiAction -ActionName 'Pair Selected' -Action {
+        if (-not $lstPreviousUnmatched.SelectedItem -or -not $lstCurrentUnmatched.SelectedItem) {
+            [System.Windows.Forms.MessageBox]::Show('Select one unmatched previous file and one unmatched current file.', 'Expecto Comparo', 'OK', 'Information') | Out-Null
+            return
+        }
+
+        $previousPath = [string]$lstPreviousUnmatched.SelectedItem
+        $currentPath = [string]$lstCurrentUnmatched.SelectedItem
+
+        $previousName = [System.IO.Path]::GetFileName($previousPath)
+        $currentName = [System.IO.Path]::GetFileName($currentPath)
+
+        [void]$script:State.SuggestedPairs.Add([pscustomobject]@{
+            Include = $true
+            PreviousPath = $previousPath
+            PreviousName = $previousName
+            CurrentPath = $currentPath
+            CurrentName = $currentName
+            MatchStatus = 'Manual pair'
+            Confidence = 'User confirmed'
+            OutputName = New-SafeOutputFileName -CurrentName $currentName -PreviousName $previousName
+        })
+
+        Refresh-PairGrid
     }
-
-    $previousPath = [string]$lstPreviousUnmatched.SelectedItem
-    $currentPath = [string]$lstCurrentUnmatched.SelectedItem
-
-    $previousName = [System.IO.Path]::GetFileName($previousPath)
-    $currentName = [System.IO.Path]::GetFileName($currentPath)
-
-    [void]$script:State.SuggestedPairs.Add([pscustomobject]@{
-        Include = $true
-        PreviousPath = $previousPath
-        PreviousName = $previousName
-        CurrentPath = $currentPath
-        CurrentName = $currentName
-        MatchStatus = 'Manual pair'
-        Confidence = 'User confirmed'
-        OutputName = New-SafeOutputFileName -CurrentName $currentName -PreviousName $previousName
-    })
-
-    Refresh-PairGrid
 })
 
 $btnUnpair.Add_Click({
-    if ($gridPairs.SelectedRows.Count -eq 0) {
-        [System.Windows.Forms.MessageBox]::Show('Select a pairing row to unpair.', 'Expecto Comparo', 'OK', 'Information') | Out-Null
-        return
+    Invoke-UiAction -ActionName 'Unpair Row' -Action {
+        if ($gridPairs.SelectedRows.Count -eq 0) {
+            [System.Windows.Forms.MessageBox]::Show('Select a pairing row to unpair.', 'Expecto Comparo', 'OK', 'Information') | Out-Null
+            return
+        }
+
+        $pair = $gridPairs.SelectedRows[0].Tag
+        if (-not $pair) { return }
+
+        [void]$script:State.SuggestedPairs.Remove($pair)
+        Refresh-PairGrid
     }
-
-    $pair = $gridPairs.SelectedRows[0].Tag
-    if (-not $pair) { return }
-
-    [void]$script:State.SuggestedPairs.Remove($pair)
-    Refresh-PairGrid
 })
 
 $btnStart.Add_Click({
-    Start-ComparisonRun
+    Invoke-UiAction -ActionName 'Start Comparison' -Action {
+        Start-ComparisonRun
+    }
 })
 
-[void]$form.ShowDialog()
+if (-not $env:EXPECTO_COMPARO_TEST_MODE) {
+    [void]$form.ShowDialog()
+}
