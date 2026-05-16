@@ -6,7 +6,7 @@ Add-Type -AssemblyName System.Drawing
 
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
-$script:MaxSuggestedOutputNameLength = 180
+$script:MaxSuggestedOutputNameLength = 180 # leaves room for folder path to reduce Windows long-path save failures
 $script:FuzzyMatchThreshold = 0.70
 $script:HigherConfidenceFuzzyThreshold = 0.85
 
@@ -63,7 +63,7 @@ function Get-LevenshteinDistance {
 
     for ($i = 1; $i -lt $height; $i++) {
         for ($j = 1; $j -lt $width; $j++) {
-            $cost = if ($A.Chars($i - 1) -ceq $B.Chars($j - 1)) { 0 } else { 1 }
+            $cost = if ($A.Chars($i - 1) -ieq $B.Chars($j - 1)) { 0 } else { 1 }
             $deletion = $d[$i - 1, $j] + 1
             $insertion = $d[$i, $j - 1] + 1
             $substitution = $d[$i - 1, $j - 1] + $cost
@@ -408,10 +408,12 @@ function Start-ComparisonRun {
                 $wdCompareDestinationNew = 2
                 $wdGranularityWordLevel = 1
 
+                $revisedAuthor = if ([string]::IsNullOrWhiteSpace($env:USERNAME)) { 'ExpectoComparo' } else { $env:USERNAME }
+
                 $comparisonDoc = $word.CompareDocuments(
                     $previousDoc,
                     $currentDoc,
-                    $wdCompareDestinationNew, # create a new comparison document
+                    $wdCompareDestinationNew, # wdCompareDestinationNew: create a new comparison document
                     $wdGranularityWordLevel, # compare at word level
                     $true, # compare formatting
                     $true, # compare case changes
@@ -423,7 +425,7 @@ function Start-ComparisonRun {
                     $true, # compare fields
                     $true, # compare comments
                     $true, # compare moves
-                    $env:USERNAME, # revised author label
+                    $revisedAuthor, # revised author label
                     $true # ignore all comparison warnings
                 )
 
