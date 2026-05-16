@@ -6,6 +6,10 @@ Add-Type -AssemblyName System.Drawing
 
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
+$script:MaxSuggestedOutputNameLength = 180
+$script:FuzzyMatchThreshold = 0.70
+$script:HigherConfidenceFuzzyThreshold = 0.85
+
 $script:State = [ordered]@{
     PreviousFolder = ''
     CurrentFolder = ''
@@ -95,7 +99,7 @@ function New-SafeOutputFileName {
     $previousBase = [System.IO.Path]::GetFileNameWithoutExtension($PreviousName)
 
     $name = "$currentBase - compared against $previousBase.docx"
-    if ($name.Length -gt 180) {
+    if ($name.Length -gt $script:MaxSuggestedOutputNameLength) {
         $name = "$currentBase - comparison.docx"
     }
 
@@ -236,10 +240,10 @@ function Suggest-Pairs {
                 }
             }
 
-            if ($best -and $bestScore -ge 0.70) {
+            if ($best -and $bestScore -ge $script:FuzzyMatchThreshold) {
                 $match = $best
                 $status = 'Fuzzy suggestion'
-                $confidence = if ($bestScore -ge 0.85) { 'Medium' } else { 'Low' }
+                $confidence = if ($bestScore -ge $script:HigherConfidenceFuzzyThreshold) { 'Medium' } else { 'Low' }
             }
         }
 
@@ -422,7 +426,7 @@ function Start-ComparisonRun {
                     $true
                 )
 
-                $wdFormatXmlDocument = 12
+                $wdFormatXmlDocument = 12 # wdFormatXMLDocument (.docx)
                 $comparisonDoc.SaveAs([ref]$outputPath, [ref]$wdFormatXmlDocument)
                 $successCount++
                 Write-RunLog -Level 'info' -Message "Success: $outputPath" -ToUi

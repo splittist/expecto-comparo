@@ -4,7 +4,7 @@ Easy comparison of docx suites using Word.
 
 ## First implementation: PowerShell WinForms prototype
 
-The repository now includes `/home/runner/work/expecto-comparo/expecto-comparo/Expecto-Comparo.ps1`, a Windows PowerShell GUI tool focused on non-technical users.
+The repository now includes `./Expecto-Comparo.ps1`, a Windows PowerShell GUI tool focused on non-technical users.
 
 ### What it does
 
