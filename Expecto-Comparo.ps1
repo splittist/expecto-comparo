@@ -6,9 +6,12 @@ Add-Type -AssemblyName System.Drawing
 
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
-$script:MaxSuggestedOutputNameLength = 180 # leaves room for folder path to reduce Windows long-path save failures
+$script:MaxSuggestedOutputNameLength = 180 # conservative default to reduce path-length issues in older/locked-down Windows environments
 $script:FuzzyMatchThreshold = 0.70
 $script:HigherConfidenceFuzzyThreshold = 0.85
+$script:WdCompareDestinationNew = 2 # Word constant: wdCompareDestinationNew
+$script:WdGranularityWordLevel = 1 # Word constant: wdGranularityWordLevel
+$script:WdFormatXMLDocument = 12 # Word constant: wdFormatXMLDocument (.docx)
 
 $script:State = [ordered]@{
     PreviousFolder = ''
@@ -405,16 +408,13 @@ function Start-ComparisonRun {
                 $previousDoc = $word.Documents.Open($previousPath, [ref]$false, [ref]$readOnly)
                 $currentDoc = $word.Documents.Open($currentPath, [ref]$false, [ref]$readOnly)
 
-                $wdCompareDestinationNew = 2 # Word constant: wdCompareDestinationNew
-                $wdGranularityWordLevel = 1 # Word constant: wdGranularityWordLevel
-
                 $revisedAuthor = if ([string]::IsNullOrWhiteSpace($env:USERNAME)) { 'ExpectoComparo' } else { $env:USERNAME }
 
                 $comparisonDoc = $word.CompareDocuments(
                     $previousDoc,
                     $currentDoc,
-                    $wdCompareDestinationNew, # wdCompareDestinationNew: create a new comparison document
-                    $wdGranularityWordLevel, # compare at word level
+                    $script:WdCompareDestinationNew, # wdCompareDestinationNew: create a new comparison document
+                    $script:WdGranularityWordLevel, # compare at word level
                     $true, # compare formatting
                     $true, # compare case changes
                     $true, # compare whitespace
@@ -429,8 +429,7 @@ function Start-ComparisonRun {
                     $true # ignore all comparison warnings
                 )
 
-                $wdFormatXMLDocument = 12 # Word constant: wdFormatXMLDocument (.docx)
-                $comparisonDoc.SaveAs([ref]$outputPath, $wdFormatXMLDocument)
+                $comparisonDoc.SaveAs([ref]$outputPath, $script:WdFormatXMLDocument)
                 $successCount++
                 Write-RunLog -Level 'info' -Message "Success: $outputPath" -ToUi
             }
