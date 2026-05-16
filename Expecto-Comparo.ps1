@@ -63,7 +63,7 @@ function Get-LevenshteinDistance {
 
     for ($i = 1; $i -lt $height; $i++) {
         for ($j = 1; $j -lt $width; $j++) {
-            $cost = if ($A[$i - 1] -eq $B[$j - 1]) { 0 } else { 1 }
+            $cost = if ($A.Chars($i - 1) -ceq $B.Chars($j - 1)) { 0 } else { 1 }
             $deletion = $d[$i - 1, $j] + 1
             $insertion = $d[$i, $j - 1] + 1
             $substitution = $d[$i - 1, $j - 1] + $cost
@@ -402,10 +402,8 @@ function Start-ComparisonRun {
 
             try {
                 $readOnly = $true
-                $isVisible = $false
-
-                $previousDoc = $word.Documents.Open($previousPath, [ref]$false, [ref]$readOnly, [ref]$false, [ref]'', [ref]'', [ref]$isVisible)
-                $currentDoc = $word.Documents.Open($currentPath, [ref]$false, [ref]$readOnly, [ref]$false, [ref]'', [ref]'', [ref]$isVisible)
+                $previousDoc = $word.Documents.Open($previousPath, [ref]$false, [ref]$readOnly)
+                $currentDoc = $word.Documents.Open($currentPath, [ref]$false, [ref]$readOnly)
 
                 $wdCompareDestinationNew = 2
                 $wdGranularityWordLevel = 1

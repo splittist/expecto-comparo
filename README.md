@@ -33,7 +33,7 @@ The repository now includes `./Expecto-Comparo.ps1`, a Windows PowerShell GUI to
 From Windows PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\Expecto-Comparo.ps1
+powershell -ExecutionPolicy RemoteSigned -File .\Expecto-Comparo.ps1
 ```
 
 ### Notes
