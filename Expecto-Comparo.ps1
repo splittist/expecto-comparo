@@ -21,6 +21,8 @@ $script:State = [ordered]@{
     OutputFolder = ''
     PreviousFiles = @()
     CurrentFiles = @()
+    PreviousUnmatchedFiles = @()
+    CurrentUnmatchedFiles = @()
     SuggestedPairs = [System.Collections.ArrayList]::new()
     LogLines = [System.Collections.Generic.List[string]]::new()
     LogPath = ''
@@ -34,6 +36,12 @@ function Get-DocxFiles {
     }
 
     return @(Get-ChildItem -LiteralPath $Folder -Filter '*.docx' -File -ErrorAction SilentlyContinue | Sort-Object Name)
+}
+
+function Get-FileListDisplayName {
+    param([Parameter(Mandatory)][System.IO.FileInfo]$File)
+
+    return $File.Name
 }
 
 function Get-NormalizedBaseName {
@@ -182,18 +190,16 @@ function Refresh-UnmatchedLists {
         if ($item.CurrentPath) { [void]$pairedCurrent.Add($item.CurrentPath) }
     }
 
+    $script:State.PreviousUnmatchedFiles = @($script:State.PreviousFiles | Where-Object { -not $pairedPrevious.Contains($_.FullName) })
     $lstPreviousUnmatched.Items.Clear()
-    foreach ($file in $script:State.PreviousFiles) {
-        if (-not $pairedPrevious.Contains($file.FullName)) {
-            [void]$lstPreviousUnmatched.Items.Add($file.FullName)
-        }
+    foreach ($file in $script:State.PreviousUnmatchedFiles) {
+        [void]$lstPreviousUnmatched.Items.Add((Get-FileListDisplayName -File $file))
     }
 
+    $script:State.CurrentUnmatchedFiles = @($script:State.CurrentFiles | Where-Object { -not $pairedCurrent.Contains($_.FullName) })
     $lstCurrentUnmatched.Items.Clear()
-    foreach ($file in $script:State.CurrentFiles) {
-        if (-not $pairedCurrent.Contains($file.FullName)) {
-            [void]$lstCurrentUnmatched.Items.Add($file.FullName)
-        }
+    foreach ($file in $script:State.CurrentUnmatchedFiles) {
+        [void]$lstCurrentUnmatched.Items.Add((Get-FileListDisplayName -File $file))
     }
 }
 
@@ -665,11 +671,12 @@ $btnPair.Add_Click({
             return
         }
 
-        $previousPath = [string]$lstPreviousUnmatched.SelectedItem
-        $currentPath = [string]$lstCurrentUnmatched.SelectedItem
-
-        $previousName = [System.IO.Path]::GetFileName($previousPath)
-        $currentName = [System.IO.Path]::GetFileName($currentPath)
+        $previousFile = $script:State.PreviousUnmatchedFiles[$lstPreviousUnmatched.SelectedIndex]
+        $currentFile = $script:State.CurrentUnmatchedFiles[$lstCurrentUnmatched.SelectedIndex]
+        $previousPath = $previousFile.FullName
+        $currentPath = $currentFile.FullName
+        $previousName = $previousFile.Name
+        $currentName = $currentFile.Name
 
         [void]$script:State.SuggestedPairs.Add([pscustomobject]@{
             Include = $true

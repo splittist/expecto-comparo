@@ -122,6 +122,8 @@ function Reset-UiState {
     $script:State.OutputFolder = ''
     $script:State.PreviousFiles = @()
     $script:State.CurrentFiles = @()
+    $script:State.PreviousUnmatchedFiles = @()
+    $script:State.CurrentUnmatchedFiles = @()
     $script:State.SuggestedPairs.Clear()
 
     $gridPairs.Rows.Clear()
@@ -185,6 +187,20 @@ try {
     Reset-UiState -PreviousFolder $multiPrevious -CurrentFolder $multiCurrent
     Scan-Folders
     Assert-ScanState -PreviousCount 2 -CurrentCount 2 -PairCount 2 -PreviousUnmatchedCount 0 -CurrentUnmatchedCount 0
+
+    $unmatchedPrevious = Join-Path -Path $testRoot -ChildPath 'unmatched-previous'
+    $unmatchedCurrent = Join-Path -Path $testRoot -ChildPath 'unmatched-current'
+    [void](New-Item -Path $unmatchedPrevious -ItemType Directory)
+    [void](New-Item -Path $unmatchedCurrent -ItemType Directory)
+    [void](New-Item -Path (Join-Path -Path $unmatchedPrevious -ChildPath 'PrevOnly.docx') -ItemType File)
+    [void](New-Item -Path (Join-Path -Path $unmatchedCurrent -ChildPath 'CurrOnly.docx') -ItemType File)
+    Reset-UiState -PreviousFolder $unmatchedPrevious -CurrentFolder $unmatchedCurrent
+    Scan-Folders
+    Assert-ScanState -PreviousCount 1 -CurrentCount 1 -PairCount 0 -PreviousUnmatchedCount 1 -CurrentUnmatchedCount 1
+    Assert-Equal -Expected 'PrevOnly.docx' -Actual ([string]$lstPreviousUnmatched.Items[0]) -Message 'Previous unmatched list should display only the filename.'
+    Assert-Equal -Expected 'CurrOnly.docx' -Actual ([string]$lstCurrentUnmatched.Items[0]) -Message 'Current unmatched list should display only the filename.'
+    Assert-Equal -Expected 'PrevOnly.docx' -Actual $script:State.PreviousUnmatchedFiles[0].Name -Message 'Previous unmatched state should retain the file info object.'
+    Assert-Equal -Expected 'CurrOnly.docx' -Actual $script:State.CurrentUnmatchedFiles[0].Name -Message 'Current unmatched state should retain the file info object.'
 
     $rescanPrevious = Join-Path -Path $testRoot -ChildPath 'rescan-previous'
     $rescanCurrent = Join-Path -Path $testRoot -ChildPath 'rescan-current'
