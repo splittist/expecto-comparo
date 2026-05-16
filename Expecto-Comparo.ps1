@@ -407,23 +407,26 @@ function Start-ComparisonRun {
                 $previousDoc = $word.Documents.Open($previousPath, [ref]$false, [ref]$readOnly, [ref]$false, [ref]'', [ref]'', [ref]$isVisible)
                 $currentDoc = $word.Documents.Open($currentPath, [ref]$false, [ref]$readOnly, [ref]$false, [ref]'', [ref]'', [ref]$isVisible)
 
+                $wdCompareDestinationNew = 2
+                $wdGranularityWordLevel = 1
+
                 $comparisonDoc = $word.CompareDocuments(
                     $previousDoc,
                     $currentDoc,
-                    2,
-                    1,
-                    $true,
-                    $true,
-                    $true,
-                    $true,
-                    $true,
-                    $true,
-                    $true,
-                    $true,
-                    $true,
-                    $true,
-                    $env:USERNAME,
-                    $true
+                    $wdCompareDestinationNew, # create a new comparison document
+                    $wdGranularityWordLevel, # compare at word level
+                    $true, # compare formatting
+                    $true, # compare case changes
+                    $true, # compare whitespace
+                    $true, # compare tables
+                    $true, # compare headers
+                    $true, # compare footnotes
+                    $true, # compare textboxes
+                    $true, # compare fields
+                    $true, # compare comments
+                    $true, # compare moves
+                    $env:USERNAME, # revised author label
+                    $true # ignore all comparison warnings
                 )
 
                 $wdFormatXmlDocument = 12 # Word constant: wdFormatXMLDocument (.docx)
