@@ -405,8 +405,8 @@ function Start-ComparisonRun {
                 $previousDoc = $word.Documents.Open($previousPath, [ref]$false, [ref]$readOnly)
                 $currentDoc = $word.Documents.Open($currentPath, [ref]$false, [ref]$readOnly)
 
-                $wdCompareDestinationNew = 2
-                $wdGranularityWordLevel = 1
+                $wdCompareDestinationNew = 2 # Word constant: wdCompareDestinationNew
+                $wdGranularityWordLevel = 1 # Word constant: wdGranularityWordLevel
 
                 $revisedAuthor = if ([string]::IsNullOrWhiteSpace($env:USERNAME)) { 'ExpectoComparo' } else { $env:USERNAME }
 
@@ -429,8 +429,8 @@ function Start-ComparisonRun {
                     $true # ignore all comparison warnings
                 )
 
-                $wdFormatXmlDocument = 12 # Word constant: wdFormatXMLDocument (.docx)
-                $comparisonDoc.SaveAs([ref]$outputPath, $wdFormatXmlDocument)
+                $wdFormatXMLDocument = 12 # Word constant: wdFormatXMLDocument (.docx)
+                $comparisonDoc.SaveAs([ref]$outputPath, $wdFormatXMLDocument)
                 $successCount++
                 Write-RunLog -Level 'info' -Message "Success: $outputPath" -ToUi
             }
