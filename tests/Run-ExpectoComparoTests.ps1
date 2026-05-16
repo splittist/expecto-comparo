@@ -155,6 +155,12 @@ function Assert-ScanState {
 $testRoot = New-TestRoot
 
 try {
+    Assert-Equal -Expected 180 -Actual $gridPairs.Height -Message 'Pairing grid should use the compact height for smaller screens.'
+    Assert-Equal -Expected 'Vertical' -Actual ([string]$gridPairs.ScrollBars) -Message 'Pairing grid should keep vertical scrolling enabled.'
+    Assert-True -Condition ($lblPrevUnmatched.Top -gt $gridPairs.Bottom) -Message 'Unmatched file lists should remain below the pairing grid.'
+    Assert-True -Condition ($btnStart.Bottom -le $form.ClientSize.Height) -Message 'Start Comparison button should remain visible within the form client area.'
+    Assert-True -Condition ($txtStatus.Bottom -le $form.ClientSize.Height) -Message 'Status textbox should remain visible within the form client area.'
+
     $fixtureGenerator = Initialize-FixtureGenerator -Root $testRoot
 
     $emptyPrevious = Join-Path -Path $testRoot -ChildPath 'empty-previous'

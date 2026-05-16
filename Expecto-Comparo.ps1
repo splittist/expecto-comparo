@@ -501,7 +501,7 @@ function Start-ComparisonRun {
 $form = New-Object System.Windows.Forms.Form
 $form.Text = 'Expecto Comparo'
 $form.Width = 1240
-$form.Height = 860
+$form.Height = 720
 $form.StartPosition = 'CenterScreen'
 
 $btnPrevious = New-Object System.Windows.Forms.Button
@@ -552,12 +552,13 @@ $lblCounts.Text = 'Previous: 0   Current: 0   Suggested pairs: 0'
 $gridPairs = New-Object System.Windows.Forms.DataGridView
 $gridPairs.Location = New-Object System.Drawing.Point(10, 150)
 $gridPairs.Width = 1200
-$gridPairs.Height = 360
+$gridPairs.Height = 180
 $gridPairs.AllowUserToAddRows = $false
 $gridPairs.AllowUserToDeleteRows = $false
 $gridPairs.SelectionMode = 'FullRowSelect'
 $gridPairs.MultiSelect = $false
 $gridPairs.AutoSizeColumnsMode = 'Fill'
+$gridPairs.ScrollBars = 'Vertical'
 
 [void]$gridPairs.Columns.Add((New-Object System.Windows.Forms.DataGridViewCheckBoxColumn -Property @{ Name = 'Include'; HeaderText = 'Include'; FillWeight = 40 }))
 [void]$gridPairs.Columns.Add((New-Object System.Windows.Forms.DataGridViewTextBoxColumn -Property @{ Name = 'Previous'; HeaderText = 'Previous document'; FillWeight = 210; ReadOnly = $true }))
@@ -568,36 +569,36 @@ $gridPairs.AutoSizeColumnsMode = 'Fill'
 
 $lblPrevUnmatched = New-Object System.Windows.Forms.Label
 $lblPrevUnmatched.Text = 'Unmatched Previous Files'
-$lblPrevUnmatched.Location = New-Object System.Drawing.Point(10, 520)
+$lblPrevUnmatched.Location = New-Object System.Drawing.Point(10, 340)
 $lblPrevUnmatched.AutoSize = $true
 
 $lstPreviousUnmatched = New-Object System.Windows.Forms.ListBox
-$lstPreviousUnmatched.Location = New-Object System.Drawing.Point(10, 540)
+$lstPreviousUnmatched.Location = New-Object System.Drawing.Point(10, 360)
 $lstPreviousUnmatched.Width = 500
 $lstPreviousUnmatched.Height = 130
 
 $lblCurrUnmatched = New-Object System.Windows.Forms.Label
 $lblCurrUnmatched.Text = 'Unmatched Current Files'
-$lblCurrUnmatched.Location = New-Object System.Drawing.Point(710, 520)
+$lblCurrUnmatched.Location = New-Object System.Drawing.Point(710, 340)
 $lblCurrUnmatched.AutoSize = $true
 
 $lstCurrentUnmatched = New-Object System.Windows.Forms.ListBox
-$lstCurrentUnmatched.Location = New-Object System.Drawing.Point(710, 540)
+$lstCurrentUnmatched.Location = New-Object System.Drawing.Point(710, 360)
 $lstCurrentUnmatched.Width = 500
 $lstCurrentUnmatched.Height = 130
 
 $btnPair = New-Object System.Windows.Forms.Button
 $btnPair.Text = 'Pair Selected ->'
 $btnPair.Width = 160
-$btnPair.Location = New-Object System.Drawing.Point(530, 560)
+$btnPair.Location = New-Object System.Drawing.Point(530, 380)
 
 $btnUnpair = New-Object System.Windows.Forms.Button
 $btnUnpair.Text = '<- Unpair Row'
 $btnUnpair.Width = 160
-$btnUnpair.Location = New-Object System.Drawing.Point(530, 600)
+$btnUnpair.Location = New-Object System.Drawing.Point(530, 420)
 
 $progressBar = New-Object System.Windows.Forms.ProgressBar
-$progressBar.Location = New-Object System.Drawing.Point(10, 680)
+$progressBar.Location = New-Object System.Drawing.Point(10, 500)
 $progressBar.Width = 860
 $progressBar.Height = 24
 
@@ -605,10 +606,10 @@ $btnStart = New-Object System.Windows.Forms.Button
 $btnStart.Text = 'Start Comparison'
 $btnStart.Width = 180
 $btnStart.Height = 30
-$btnStart.Location = New-Object System.Drawing.Point(890, 677)
+$btnStart.Location = New-Object System.Drawing.Point(890, 497)
 
 $txtStatus = New-Object System.Windows.Forms.TextBox
-$txtStatus.Location = New-Object System.Drawing.Point(10, 715)
+$txtStatus.Location = New-Object System.Drawing.Point(10, 535)
 $txtStatus.Width = 1200
 $txtStatus.Height = 100
 $txtStatus.Multiline = $true
