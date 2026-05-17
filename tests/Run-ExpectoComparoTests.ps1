@@ -32,6 +32,37 @@ function Assert-True {
     }
 }
 
+function New-FakeWordDocument {
+    param([switch]$WithSaveAs2)
+
+    $document = [pscustomobject]@{
+        SaveAsCalls = 0
+        SaveAs2Calls = 0
+        LastSavePath = $null
+        LastSaveFormat = $null
+    }
+
+    $document | Add-Member -MemberType ScriptMethod -Name SaveAs -Value {
+        param($Path, $Format)
+
+        $this.SaveAsCalls++
+        $this.LastSavePath = $Path
+        $this.LastSaveFormat = $Format
+    }
+
+    if ($WithSaveAs2) {
+        $document | Add-Member -MemberType ScriptMethod -Name SaveAs2 -Value {
+            param($Path, $Format)
+
+            $this.SaveAs2Calls++
+            $this.LastSavePath = $Path
+            $this.LastSaveFormat = $Format
+        }
+    }
+
+    return $document
+}
+
 function New-TestRoot {
     $parent = Join-Path -Path $repoRoot -ChildPath '.test-tmp'
     if (-not (Test-Path -LiteralPath $parent -PathType Container)) {
@@ -223,6 +254,23 @@ try {
     Assert-ScanState -PreviousCount 2 -CurrentCount 2 -PairCount 2 -PreviousUnmatchedCount 0 -CurrentUnmatchedCount 0
 
     Assert-Equal -Expected 3 -Actual (Get-LevenshteinDistance -A 'kitten' -B 'sitting') -Message 'Levenshtein distance regression failed.'
+
+    $savePath = Join-Path -Path $testRoot -ChildPath 'comparison-output.docx'
+    $legacyDocument = New-FakeWordDocument
+    Save-WordDocumentAsDocx -Document $legacyDocument -Path $savePath
+    Assert-Equal -Expected 1 -Actual $legacyDocument.SaveAsCalls -Message 'Legacy Word documents should use SaveAs.'
+    Assert-Equal -Expected 0 -Actual $legacyDocument.SaveAs2Calls -Message 'Legacy Word documents should not use SaveAs2.'
+    Assert-Equal -Expected $savePath -Actual $legacyDocument.LastSavePath -Message 'SaveAs should receive the output path as a plain string.'
+    Assert-True -Condition (-not ($legacyDocument.LastSavePath -is [System.Management.Automation.PSReference])) -Message 'SaveAs should not receive a PowerShell reference wrapper.'
+    Assert-Equal -Expected $script:WdFormatXMLDocument -Actual $legacyDocument.LastSaveFormat -Message 'SaveAs should receive the docx format code.'
+
+    $modernDocument = New-FakeWordDocument -WithSaveAs2
+    Save-WordDocumentAsDocx -Document $modernDocument -Path $savePath
+    Assert-Equal -Expected 0 -Actual $modernDocument.SaveAsCalls -Message 'Modern Word documents should prefer SaveAs2 when available.'
+    Assert-Equal -Expected 1 -Actual $modernDocument.SaveAs2Calls -Message 'Modern Word documents should use SaveAs2 once.'
+    Assert-Equal -Expected $savePath -Actual $modernDocument.LastSavePath -Message 'SaveAs2 should receive the output path as a plain string.'
+    Assert-True -Condition (-not ($modernDocument.LastSavePath -is [System.Management.Automation.PSReference])) -Message 'SaveAs2 should not receive a PowerShell reference wrapper.'
+    Assert-Equal -Expected $script:WdFormatXMLDocument -Actual $modernDocument.LastSaveFormat -Message 'SaveAs2 should receive the docx format code.'
 
     Write-Host 'All Expecto Comparo tests passed.'
 }

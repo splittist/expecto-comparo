@@ -143,6 +143,21 @@ function Get-UniqueOutputPath {
     return $candidate
 }
 
+function Save-WordDocumentAsDocx {
+    param(
+        [Parameter(Mandatory)]$Document,
+        [Parameter(Mandatory)][string]$Path
+    )
+
+    $saveAs2Methods = $Document.PSObject.Methods.Match('SaveAs2')
+    if ($saveAs2Methods.Count -gt 0) {
+        $Document.SaveAs2($Path, $script:WdFormatXMLDocument)
+        return
+    }
+
+    $Document.SaveAs($Path, $script:WdFormatXMLDocument)
+}
+
 function Write-RunLog {
     param(
         [Parameter(Mandatory)][string]$Level,
@@ -459,7 +474,7 @@ function Start-ComparisonRun {
                     $true # ignore all comparison warnings
                 )
 
-                $comparisonDoc.SaveAs([ref]$outputPath, $script:WdFormatXMLDocument)
+                Save-WordDocumentAsDocx -Document $comparisonDoc -Path $outputPath
                 $successCount++
                 Write-RunLog -Level 'info' -Message "Success: $outputPath" -ToUi
             }
